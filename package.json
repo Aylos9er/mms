@@ -1,0 +1,24 @@
+{
+  "name": "microgrid-mms-viz",
+  "version": "1.0.0",
+  "description": "A conceptual microgrid MMS visualization framework using HTML, Pyodide, and Paper.js",
+  "main": "index.html",
+  "scripts": {
+    "start": "live-server --browser=firefox --wait=1000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "microgrid",
+    "mms",
+    "visualization",
+    "pyodide",
+    "paperjs",
+    "python",
+    "javascript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
