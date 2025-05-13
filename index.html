@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Microgrid MMS Visual Model</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"></script>
+<style>
+  body { margin: 0; overflow: hidden; display: flex; flex-direction: column; }
+  #myCanvas { width: 100%; height: 80vh; background-color: #f0f0f0; }
+  #controls { padding: 10px; text-align: center; height: 20vh; overflow-y: auto; }
+</style>
+</head>
+<body>
+
+<canvas id="myCanvas" resize></canvas>
+<div id="controls">
+  <h2>MMS Control Panel & Data</h2>
+  <p>Visualizing the Hybrid AC/DC Mesh Microgrid and MMS Actions.</p>
+  <div id="status">Loading Pyodide and Paper.js...</div>
+  <div id="data-display"></div>
+</div>
+
+<script type="text/paperscript" canvas="myCanvas">
+  // This is where Paper.js code goes to draw and animate the visualization.
+  // Paper.js runs on the HTML5 Canvas.
+
+  // You would define functions here to draw:
+  // - The microgrid layout (nodes for sources, loads, storage, converters).
+  // - AC and DC buses/lines (perhaps different colors/styles).
+  // - Connections (mesh topology).
+
+  // You would also create visual elements to represent:
+  // - Power flow (animated lines, changing colors/thickness based on direction and magnitude).
+  // - Voltage levels (color coding nodes or lines).
+  // - State of charge for batteries (fill level of a battery icon).
+  // - Status of converters (e.g., animating direction of power conversion).
+  // - Network communication (small pulses or dots moving along communication lines).
+
+  // Initial setup of the visualization
+  paper.setup(view.size); // Set up Paper.js for the canvas size
+
+  // Example: Draw a simple node
+  var node = new Path.Circle({
+    center: view.center,
+    radius: 20,
+    fillColor: 'blue'
+  });
+
+  // Example: Animate the node (conceptual)
+  // function onFrame(event) {
+  //   node.position.x += 1; // Example animation
+  // }
+
+  // In a real model, this section would be much more complex,
+  // drawing a network graph based on the microgrid's topology.
+
+</script>
+
+<script>
+  // This is where the JavaScript and Pyodide code goes.
+
+  async function main() {
+    let status = document.getElementById('status');
+    status.innerText = 'Initializing Pyodide...';
+
+    // Load Pyodide
+    let pyodide = await loadPyodide();
+    status.innerText = 'Pyodide loaded. Loading simulation logic...';
+
+    // --- Simulation and MMS Logic (Conceptual Python Code) ---
+    // This is where you would write the Python code (running in Pyodide)
+    // that simulates the microgrid's behavior and the MMS decisions.
+
+    await pyodide.runPythonAsync(`
+      import js
+      import random
+      import time
+
+      # --- Define Microgrid Components (Conceptual) ---
+      # In a real simulation, these would be objects with properties
+      # like voltage, current, capacity, state of charge, location.
+      # Converters would have efficiency and status.
+      # Loads would have demand profiles (potentially influenced by price signals).
+      # Sources would have generation profiles (solar, wind, etc.).
+
+      microgrid_components = {
+          "solar_dc_1": {"type": "source", "power_dc": 0},
+          "battery_dc_1": {"type": "storage", "charge_kwh": 50, "capacity_kwh": 100},
+          "load_dc_1": {"type": "load", "demand_dc": 10},
+          "load_ac_1": {"type": "load", "demand_ac": 15},
+          "inverter_1": {"type": "converter_dc_ac", "status": "on"},
+          "rectifier_1": {"type": "converter_ac_dc", "status": "on"},
+          "dc_bus_1": {"type": "bus", "voltage_dc": 400},
+          "ac_bus_1": {"type": "bus", "voltage_ac": 120, "frequency": 60}
+          # Add more components for a mesh network...
+      }
+
+      # --- Network Communication (Conceptual) ---
+      def get_realtime_data():
+          data = {}
+          for name, comp in microgrid_components.items():
+              if comp["type"] == "source":
+                  data[name + "_power"] = random.uniform(0, 20) # Simulate variable solar output
+              elif comp["type"] == "storage":
+                  data[name + "_charge"] = microgrid_components[name]["charge_kwh"] # Get current charge
+              elif comp["type"] == "load":
+                  data[name + "_demand_ac"] = random.uniform(5, 20) if "demand_ac" in comp else 0
+                  data[name + "_demand_dc"] = random.uniform(5, 15) if "demand_dc" in comp else 0
+              # Add data for voltage, frequency, converter status etc.
+          # Simulate economic signal (e.g., main grid price)
+          data["main_grid_price_$/kwh"] = 0.15 + random.uniform(-0.05, 0.1) # Simulate variable price
+          data["local_microgrid_price_$/kwh"] = 0.10 + random.uniform(-0.02, 0.03) # Simulate local price
+          return data
+
+      # --- MMS Logic (Conceptual) ---
+      # This function represents the core of the MMS decisions.
+      # It would take technical data and economic signals and decide
+      # how to route power, control converters, and manage resources.
+      def mms_decision_logic(data):
+          decisions = {}
+
+          # Example Decision: Charge battery if solar is abundant and price is low
+          if data["solar_dc_1_power"] > data["load_dc_1_demand_dc"] and data["main_grid_price_$/kwh"] < 0.18:
+              excess_solar = data["solar_dc_1_power"] - data["load_dc_1_demand_dc"]
+              charge_power = min(excess_solar, 10, microgrid_components["battery_dc_1"]["capacity_kwh"] - microgrid_components["battery_dc_1"]["charge_kwh"]) # Limit charge rate/capacity
+              decisions["battery_charge_power_dc"] = charge_power
+              # Update battery state of charge (simplified)
+              microgrid_components["battery_dc_1"]["charge_kwh"] += charge_power * (5/60) # Assume 5 minute step
+
+          # Example Decision: Use battery if main grid price is high and solar is low
+          elif data["main_grid_price_$/kwh"] > 0.20 and data["solar_dc_1_power"] < data["load_dc_1_demand_dc"]:
+               discharge_power = min(data["load_dc_1_demand_dc"] + data["load_ac_1_demand_ac"] * 0.9 # estimate AC load in DC equivalent, simplified,
+                                   - data["solar_dc_1_power"], 15, microgrid_components["battery_dc_1"]["charge_kwh"]) # Limit discharge rate/capacity
+               discharge_power = max(0, discharge_power) # Ensure not negative
+               decisions["battery_discharge_power_dc"] = discharge_power
+               # Update battery state of charge (simplified)
+               microgrid_components["battery_dc_1"]["charge_kwh"] -= discharge_power * (5/60) # Assume 5 minute step
+
+
+          # Add more complex logic for:
+          # - Optimal power flow (AC/DC routing through converters) based on economic signals
+          # - Voltage and frequency control (commanding inverters/converters)
+          # - Load shedding or demand response based on grid stress or price
+          # - Interaction with the main grid (import/export)
+
+          return decisions
+
+      # --- Simulation Loop (Conceptual) ---
+      # This loop would run continuously, simulating time steps.
+      def run_simulation_step():
+          data = get_realtime_data()
+          decisions = mms_decision_logic(data)
+
+          # --- Update Visualization ---
+          # This is where you would call JavaScript functions
+          # to update the Paper.js visualization based on 'data' and 'decisions'
+          js.document.getElementById('data-display').innerHTML = \
+              f"<p>Time: {time.time():.2f}</p>" + \
+              f"<p>Solar Power (DC): {data.get('solar_dc_1_power', 0):.2f} kW</p>" + \
+              f"<p>Battery Charge: {microgrid_components['battery_dc_1']['charge_kwh']:.2f} kWh</p>" + \
+              f"<p>Main Grid Price: ${data.get('main_grid_price_$/kwh', 0):.2f}/kWh</p>" + \
+              f"<p>Decisions: {decisions}</p>"
+              # Add more data to display and logic to update Paper.js visuals
+
+      # To run the simulation, uncomment and use a mechanism like setInterval
+      # js.setInterval(run_simulation_step, 5000) # Run every 5 seconds (for visualization)
+
+      js.document.getElementById('status').innerText = 'Simulation logic loaded.'
+
+    `);
+    // End of Pyodide runPythonAsync block
+
+    status.innerText = 'Pyodide and simulation logic ready.';
+  }
+
+  main();
+
+</script>
+
+</body>
+</html>
