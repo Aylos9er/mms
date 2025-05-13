@@ -1,0 +1,17 @@
+# --- .gitignore content ---
+
+# Ignore operating system generated files
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Ignore Node.js modules folder if you decide to use npm later
+# node_modules/
+
+# Ignore build output folders if you add a build process later
+# dist/
+# build/
+
+# Add any other files or folders you want Git to ignore
+# e.g., specific IDE configuration files, temporary files
+
+# --- End of .gitignore content ---
